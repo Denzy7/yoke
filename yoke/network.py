@@ -1,5 +1,6 @@
 from zeroconf import ServiceBrowser, Zeroconf, InterfaceChoice, ServiceInfo
 import socket
+import zeroconf as z
 
 zeroconf = Zeroconf()
 
@@ -91,8 +92,4 @@ def run_webserver(port, path):
 DEFAULT_CLIENT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'yoke', 'assets', 'joypad')
 
 def get_ip_address():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('8.8.8.8', 80))
-    ip = s.getsockname()[0]
-    s.close()
-    return ip
+    return z.get_all_addresses()[0]

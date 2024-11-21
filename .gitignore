@@ -1,5 +1,6 @@
 spare-parts
 .vscode
+yoke/assets/joypad/manifest.json
 
 __pycache__/
 *.py[cod]
