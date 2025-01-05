@@ -10,11 +10,23 @@ If you want a version with customizable layouts, try [**Yoke WebView**](WEBVIEW.
 
 Get the Android app on [F-Droid](https://f-droid.org/packages/com.simonramstedt.yoke/), [Google Play](https://play.google.com/store/apps/details?id=com.simonramstedt.yoke) or [Github](https://github.com/rmst/yoke-android).
 
-The Linux client can be installed with
+The client can be installed with
 ```bash
 # Requires Python 3.5+ which comes pre-installed in Ubuntu 16.04 and after.
-pip3 install git+https://github.com/rmst/yoke.git@v0.1 --upgrade
+
+git clone https://github.com/Denzy7/yoke
+cd yoke
+
+# Linux
+python3 -m venv venv
+./venv/bin/pip install zeroconf python-uinput
+
+#windows 
+python -m venv venv
+.\venv\Scripts\pip install zeroconf
 ```
+**It's always good practice to use venv instead of raw pip into your system install as it keeps dependencies organized**
+
 On Linux to enable Yoke to create gamepad devices we need to add a udev rule
 ```bash
 yoke-enable-uinput  # you can find that script in the "bin" directory
@@ -23,11 +35,28 @@ yoke-enable-uinput  # you can find that script in the "bin" directory
 
 On Windows Yoke needs the vJoy driver. The installer can be downloaded [here](https://sourceforge.net/projects/vjoystick/).
 
-Now you can run the client with
+Now you can run the client with 
+
 ```bash
-yoke
+# Linux
+PYTHONPATH=. ./venv/bin/python bin/yoke
+
+# Windows
+set PYTHONPATH=.
+./venv/Scripts/python bin/yoke
 ```
 Your computer should then show up in the Yoke app immediately if you are on the same network.
+
+If not check the ip you want to use specifically
+```bash
+#Linux
+ip addr
+
+#Windows
+ipconfig
+```
+and edit [yoke/network.py](yoke/network.py) `def get_ip_address` to return it as a string
+
 
 ### Extras
 To test Yoke on Linux you can install, e.g. jstest-gtk:
