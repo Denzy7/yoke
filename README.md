@@ -38,13 +38,13 @@ On Windows Yoke needs the vJoy driver. The installer can be downloaded [here](ht
 Now you can run the client with 
 
 ```bash
-# Linux
-PYTHONPATH=. ./venv/bin/python bin/yoke
+# Linux (works from any directory and any shell)
+./run-yoke
 
 # Windows
-set PYTHONPATH=.
-./venv/Scripts/python bin/yoke
+run-yoke.bat
 ```
+The launcher uses the `venv` folder if it exists and passes options through, e.g. `./run-yoke --id 2`.
 Your computer should then show up in the Yoke app immediately if you are on the same network.
 
 If not check the ip you want to use specifically
