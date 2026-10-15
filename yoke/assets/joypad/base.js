@@ -299,11 +299,22 @@ Joystick.prototype.setBufferView = function(cursor, buffer) {
     }
 };
 
+// Optional output limits for a control, set in the layout CSS in jstest units (-32767 to 32767),
+// e.g. `--mg-range: -32767 0;` keeps the γ axis from going past center. Returns raw [min, max].
+function readAxisRange(id) {
+    var limits = getComputedStyle(document.getElementById('joypad'))
+        .getPropertyValue('--' + id + '-range').trim().split(/\s+/).map(Number);
+    if (limits.length != 2 || isNaN(limits[0]) || isNaN(limits[1])) { return [0, 0x7fff]; }
+    var toRaw = function(v) { return truncate(Math.round((v + 32767) * 0x7fff / 65534)); };
+    return [toRaw(Math.min(limits[0], limits[1])), toRaw(Math.max(limits[0], limits[1]))];
+}
+
 function Motion(id, updateStateCallback) {
     // Motion calculates always every coordinate, then applies a mask on it.
     var legalLabels = 'xyzabg';
     this.mask = legalLabels.indexOf(id[1]);
     this.updateTrinket = Motion.prototype['updateTrinket' + this.mask];
+    this.range = readAxisRange(id);
     Control.call(this, 'motion', id, updateStateCallback);
     this.trinket = document.createElement('div');
     this.trinket.className = 'motiontrinket';
@@ -311,12 +322,15 @@ function Motion(id, updateStateCallback) {
 }
 Motion.prototype = Object.create(Control.prototype);
 Motion.prototype.onAttached = function() {};
+Motion.prototype.clampToRange = function(val) {
+    return Math.min(Math.max(val, this.range[0]), this.range[1]);
+};
 Motion.prototype.onDeviceMotion = function(ev) {
     motionState[0] = ev.accelerationIncludingGravity.x * ACCELERATION_CONSTANT;
     motionState[1] = ev.accelerationIncludingGravity.y * ACCELERATION_CONSTANT;
     motionState[2] = ev.accelerationIncludingGravity.z * ACCELERATION_CONSTANT;
     joypad.controls.deviceMotion.forEach(function(c) {
-        c.stateBuffer.setUint16(0, truncate(0x4000 * motionState[c.mask] + 0x4000), false);
+        c.stateBuffer.setUint16(0, c.clampToRange(truncate(0x4000 * motionState[c.mask] + 0x4000)), false);
         c.updateTrinket();
     });
     joypad.updateState();
@@ -349,7 +363,7 @@ Motion.prototype.onDeviceOrientation = function(ev) {
     motionState[4] = beta / 360 + .5;
     motionState[5] = gamma / 180 + .5;
     joypad.controls.deviceOrientation.forEach(function(c) {
-        c.stateBuffer.setUint16(0, truncate(0x8000 * motionState[c.mask]), false);
+        c.stateBuffer.setUint16(0, c.clampToRange(truncate(0x8000 * motionState[c.mask])), false);
         c.updateTrinket();
     });
     joypad.updateState();

@@ -17,6 +17,10 @@
         "mb  mg  .   .   .   .   bg  bg  bs  bs  .   .   .   .   .   .   "
         "dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg dbg "
         ;
+    /* Optional output limits per control, in jstest units (-32767 to 32767).
+     * Pitch (mg) stops at center when tilted forward, so the yoke can't push the nose down
+     * past neutral; pulling back still reaches full. Remove the line for the full range. */
+    --mg-range: -32767 0;
         /* Possible values:
          * j1, j2, j3... for joystick (returns to center when released);
          * s1, s2, s3... for sticky joystick (stays in place when released);
