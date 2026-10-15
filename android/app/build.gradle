@@ -1,0 +1,33 @@
+apply plugin: 'com.android.application'
+android {
+    namespace 'com.simonramstedt.yoke'
+    buildFeatures {
+        buildConfig true
+    }
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.simonramstedt.yoke'
+        minSdkVersion 21
+        // Kept at 29: raising it changes WebView file access defaults that layouts rely on.
+        targetSdkVersion 29
+        versionCode 5
+        versionName '0.1.4alpha'
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint {
+        disable 'SetJavaScriptEnabled'
+        abortOnError false
+    }
+}
+
+dependencies {
+}

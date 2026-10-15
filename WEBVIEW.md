@@ -4,7 +4,16 @@
 
 ![Yoke WebView](media/yoke_webview.gif)
 
-Download the Android app from [GitHub](app/devel/app-debug.apk). This version is not available in F-Droid or Google Play yet, please be patient.
+The Android app's source is in [`android/`](android). This version is not available in F-Droid or Google Play yet, so build it yourself (needs JDK 17 and the Android SDK):
+
+```bash
+cd android
+echo "sdk.dir=$HOME/Android/Sdk" > local.properties   # path to your Android SDK
+./gradlew assembleDebug
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+The app finds the desktop client via mDNS and via UDP broadcast on port 15156, so allow that port through your firewall.
 
 ## Security warning
 
