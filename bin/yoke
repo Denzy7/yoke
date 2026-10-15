@@ -26,6 +26,9 @@ except OSError as err:
         print('UDP port already in use.')
         print('Hint: you can run yoke again with no arguments to try a random port,')
         print('or select a port with option --port')
+    else:
+        print('Network error: {}'.format(err))
+        print('Hint: you can select the IP of a network interface with option --iface')
 except yoke.service.TCPPortError:
     print()
     print('TCP port already in use.')

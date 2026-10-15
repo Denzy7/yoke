@@ -23,11 +23,12 @@ class MalformedMessageError(Exception): pass
 class Device:
     def __init__(self, id=1, name='Yoke', events=(), bytestring=b''):
         self.name = name + '-' + str(id)
+        self.device = None
         for fn in glob('/sys/class/input/js*/device/name'):
             with open(fn) as f:
-                fname = f.read().split()[0]  # need to split because there seem to be newlines
-                if name == fname:
-                    raise DeviceNameTakenError(name)
+                fname = f.read().strip()
+                if self.name == fname:
+                    raise DeviceNameTakenError(self.name)
 
         # set range (0, 0x7fff) for abs events
         self.events = events
@@ -37,22 +38,23 @@ class Device:
 
         BUS_VIRTUAL = 0x06
         try:
-            self.device = uinput.Device(events, name, BUS_VIRTUAL)
+            self.device = uinput.Device(events, self.name, BUS_VIRTUAL)
         except Exception as e:
             raise UInputDisabledError(*e.args)
 
     def emit(self, d, v):
         if d not in self.events:
-            print('Event {d} has not been registered… yet?'.format(d))
+            print('Event {} has not been registered… yet?'.format(d))
         self.device.emit(d, int(v), False)
 
     def flush(self):
         self.device.syn()
 
     def close(self):
-        if self.bytestring != b'':
+        if self.device is not None:
             self.device.destroy()
-            self.bytestring = b''
+            self.device = None
+        self.bytestring = b''
 
 
 # Override on Windows
@@ -190,12 +192,13 @@ class Service:
             while True:
                 try:
                     m, address = self.sock.recvfrom(self.status_length)
-
-                    if connection is None and m[0] != 255:
+                    if not m:
+                        pass  # ignore empty datagrams
+                    elif connection is None and m[0] != 255:
                         print('Connected to ', address)
                         connection = address
 
-                    if connection == address:
+                    if m and connection == address:
                         trecv = perf_counter()
                         irecv = 0
                         # The first byte of a message tells us its general content:
@@ -216,12 +219,12 @@ class Service:
                         # If they don't match, print an error message and don't acknowledge.
                         else:
                             if self.dev.bytestring == b'':
-                                v = m.decode(encoding='UTF-8')
-                                for key, value in EVENTS.ALIAS.items():
-                                    v = v.replace(key, value)
-                                v = v.split(',')
                                 try:
+                                    codes = m.decode(encoding='UTF-8').split(',')
+                                    # Expand aliases per code; substring replacement would turn e.g. 'b10' into 'BTN_GAMEPAD0'.
+                                    v = ','.join(EVENTS.ALIAS.get(c, c) for c in codes).split(',')
                                     events = [getattr(EVENTS, n) for n in v]
+                                    self.dev.close()
                                     self.dev = Device(self.devid, self.name, events, m)
                                     print('New control layout chosen.')
                                     self.status_length = self.dev.inStruct.size
@@ -234,7 +237,7 @@ class Service:
                                         # actual message length).
                                         # Until this is fixed, delay timeouts until receiving the first status report:
                                         trecv = trecv + 86400 # 24 hours will do.
-                                except AttributeError:
+                                except (AttributeError, UnicodeDecodeError):
                                     print('Error. Invalid layout discarded.')
                             else:
                                 if not self.dev.bytestring.startswith(m):

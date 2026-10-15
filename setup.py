@@ -6,7 +6,7 @@ import platform
 yoke_package_data = [
     'assets/joypad/*',
     'assets/joypad/img/*',
-    'vjoy/LICENSE.TXT'
+    'vjoy/LICENSE.txt'
 ]
 
 if platform.system() == 'Windows':

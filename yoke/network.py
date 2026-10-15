@@ -91,8 +91,16 @@ def run_webserver(port, path):
 DEFAULT_CLIENT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'yoke', 'assets', 'joypad')
 
 def get_ip_address():
+    # Connecting a UDP socket sends no packets; it only picks the interface with a route to that address.
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('8.8.8.8', 80))
-    ip = s.getsockname()[0]
-    s.close()
-    return ip
+    try:
+        s.connect(('8.8.8.8', 80))
+        return s.getsockname()[0]
+    except OSError:
+        # No default route (offline LAN, USB/Bluetooth tethering): fall back to the hostname's address.
+        ip = socket.gethostbyname(socket.gethostname())
+        if ip.startswith('127.'):
+            raise OSError('Could not detect a network interface. Select one with --iface IP.')
+        return ip
+    finally:
+        s.close()
