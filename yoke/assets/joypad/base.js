@@ -321,10 +321,33 @@ Motion.prototype.onDeviceMotion = function(ev) {
     });
     joypad.updateState();
 };
+function wrapDegrees(angle) {
+    // Wraps to [-180, 180).
+    return ((angle + 180) % 360 + 360) % 360 - 180;
+}
+function angleDistance(a, b) {
+    return Math.abs(wrapDegrees(a - b));
+}
+var lastOrientation = null;
 Motion.prototype.onDeviceOrientation = function(ev) {
-    motionState[3] = ev.alpha / 360;
-    motionState[4] = ev.beta / 360 + .5;
-    motionState[5] = ev.gamma / 180 + .5;
+    // (α, β, γ) and (α+180, 180-β, γ+180) describe the same orientation. Browsers keep γ within
+    // [-90, 90), so tilting past 90° makes β jump by 180° and γ wrap to the other end: a yoke
+    // pulled fully back would suddenly read as full forward and full roll.
+    // Keep whichever representation is closest to the previous reading so the angles stay continuous;
+    // values beyond the mapped range are then clamped by truncate() instead of wrapping.
+    var alpha = ev.alpha, beta = ev.beta, gamma = ev.gamma;
+    if (lastOrientation !== null) {
+        var flipped = [(alpha + 180) % 360, wrapDegrees(180 - beta), wrapDegrees(gamma + 180)];
+        var rawJump = angleDistance(beta, lastOrientation[1]) + angleDistance(gamma, lastOrientation[2]);
+        var flippedJump = angleDistance(flipped[1], lastOrientation[1]) + angleDistance(flipped[2], lastOrientation[2]);
+        if (flippedJump < rawJump) {
+            alpha = flipped[0]; beta = flipped[1]; gamma = flipped[2];
+        }
+    }
+    lastOrientation = [alpha, beta, gamma];
+    motionState[3] = alpha / 360;
+    motionState[4] = beta / 360 + .5;
+    motionState[5] = gamma / 180 + .5;
     joypad.controls.deviceOrientation.forEach(function(c) {
         c.stateBuffer.setUint16(0, truncate(0x8000 * motionState[c.mask]), false);
         c.updateTrinket();
