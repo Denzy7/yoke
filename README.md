@@ -45,6 +45,7 @@ Now you can run the client with
 run-yoke.bat
 ```
 The launcher uses the `venv` folder if it exists and passes options through, e.g. `./run-yoke --id 2`.
+From the repository folder you can also run the package directly: `./venv/bin/python -m yoke` (Windows: `venv\Scripts\python -m yoke`).
 Your computer should then show up in the Yoke app immediately if you are on the same network.
 
 If not check the ip you want to use specifically

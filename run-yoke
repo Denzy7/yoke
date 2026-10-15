@@ -4,4 +4,4 @@
 here=$(cd "$(dirname "$0")" && pwd)
 python="$here/venv/bin/python"
 [ -x "$python" ] || python=python3
-PYTHONPATH="$here${PYTHONPATH:+:$PYTHONPATH}" exec "$python" "$here/bin/yoke" "$@"
+PYTHONPATH="$here${PYTHONPATH:+:$PYTHONPATH}" exec "$python" -m yoke "$@"

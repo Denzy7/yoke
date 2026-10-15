@@ -6,4 +6,4 @@ set "HERE=%~dp0"
 set "PY=%HERE%venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 set "PYTHONPATH=%HERE%;%PYTHONPATH%"
-"%PY%" "%HERE%bin\yoke" %*
+"%PY%" -m yoke %*
