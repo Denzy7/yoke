@@ -88,6 +88,35 @@ def run_webserver(port, path):
         # Service will verify the thread is closed and raise a TCPPortError.
         exit()
 
+# Broadcast discovery, for networks that filter mDNS multicast.
+# Must match DISCOVERY_PORT in the Android app (YokeActivity.java).
+DISCOVERY_PORT = 15156
+
+def open_discovery_socket():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Let several yoke processes share the port; broadcasts are delivered to all of them.
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if hasattr(socket, 'SO_REUSEPORT'):
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    try:
+        s.bind(('', DISCOVERY_PORT))
+    except OSError as err:
+        s.close()
+        print('Broadcast discovery unavailable ({}); the app can still find this machine via mDNS.'.format(err))
+        return None
+    return s
+
+def run_discovery_responder(sock, name, port):
+    # Request: b"YOKE?"  Reply: b"YOKE <port> <service name>"
+    reply = 'YOKE {} {}'.format(port, name).encode('UTF-8')
+    while True:
+        try:
+            m, address = sock.recvfrom(64)
+            if m == b'YOKE?':
+                sock.sendto(reply, address)
+        except OSError:
+            return  # socket closed by Service.close()
+
 DEFAULT_CLIENT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'yoke', 'assets', 'joypad')
 
 def get_ip_address():

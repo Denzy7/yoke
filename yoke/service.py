@@ -5,6 +5,7 @@ import sys
 from yoke import events as EVENTS
 from yoke.network import *
 import struct
+import re
 from glob import glob
 from threading import Thread
 if system() == 'Windows':
@@ -121,6 +122,7 @@ if system() == 'Windows':
 
 class Service:
     sock = None
+    discovery_sock = None
     info = None
     name = None
     devid = None
@@ -168,15 +170,21 @@ class Service:
         stype = '_yoke._udp.local.'
         netname = socket.gethostname() + '-' + self.dev.name
         fullname = netname + '.' + stype
+        # Use a plain hostname as the SRV target; some Android mDNS resolvers fail on names like "x._yoke._udp.local.".
+        server = re.sub('[^A-Za-z0-9-]', '-', netname) + '.local.'
         self.info = ServiceInfo(
             stype,
             fullname,
             addresses=[socket.inet_aton(adr)],
             port=port,
             properties={},
-            server=fullname
+            server=server
         )
-        zeroconf.register_service(self.info, ttl=10)
+        zeroconf.register_service(self.info)
+
+        self.discovery_sock = open_discovery_socket()
+        if self.discovery_sock is not None:
+            Thread(target=run_discovery_responder, args=(self.discovery_sock, netname, port), daemon=True).start()
 
         if not self.thread.is_alive():
             raise TCPPortError
@@ -271,5 +279,8 @@ class Service:
             self.dev.close()
         if self.sock is not None:
             self.sock.close()
+        if self.discovery_sock is not None:
+            self.discovery_sock.close()
+            self.discovery_sock = None
         if self.info is not None:
             zeroconf.unregister_service(self.info)
