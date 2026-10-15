@@ -14,6 +14,12 @@ elif system() == 'Linux':
     import uinput
 
 ABS_EVENTS = [getattr(EVENTS, n) for n in dir(EVENTS) if n.startswith('ABS_')]
+# Pedals and analog triggers rest at zero on the phone; every other axis rests at the center.
+ABS_REST_AT_ZERO = [EVENTS.ABS_GAS, EVENTS.ABS_BRAKE, EVENTS.ABS_THROTTLE] + \
+    [getattr(EVENTS, 'ABS_HAT{}{}'.format(i, a)) for i in range(4) for a in 'XY']
+
+def abs_rest_value(event):
+    return 0 if event in ABS_REST_AT_ZERO else 0x4000
 
 # Basic error handlers used (and explained) by the script bin/yoke:
 class TCPPortError(RuntimeError): pass
@@ -42,6 +48,14 @@ class Device:
             self.device = uinput.Device(events, self.name, BUS_VIRTUAL)
         except Exception as e:
             raise UInputDisabledError(*e.args)
+
+        # New axes read as the minimum until the first status report arrives, which looks like
+        # full deflection; start them at the value the phone sends at rest instead.
+        rest = [(e, abs_rest_value(e)) for e in self.events if e in ABS_EVENTS]
+        for e, v in rest:
+            self.device.emit(e, v, False)
+        if rest:
+            self.device.syn()
 
     def emit(self, d, v):
         if d not in self.events:
@@ -85,6 +99,12 @@ if system() == 'Windows':
             self.inStruct = struct.Struct(self.inStruct)
             self.axes = [0,] * 15
             self.buttons = 0
+            # Start axes at the phone's rest values instead of the minimum (see the Linux Device).
+            axis_events = [e for e in events if e[0] == 0x03]
+            for i, e in enumerate(axis_events[:len(self.axes)]):
+                self.axes[i] = abs_rest_value(e) + 1
+            if axis_events:
+                self.flush()
         def emit(self, d, v):
             if d is not None:
                 if d[0] == 0x03: #analog axis
