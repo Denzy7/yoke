@@ -21,6 +21,8 @@
      * Pitch (mg) stops at center when tilted forward, so the yoke can't push the nose down
      * past neutral; pulling back still reaches full. Remove the line for the full range. */
     --mg-range: -32767 0;
+    /* Roll (mb) stops at 45° each way (about 182 units per degree). */
+    --mb-range: -8192 8192;
         /* Possible values:
          * j1, j2, j3... for joystick (returns to center when released);
          * s1, s2, s3... for sticky joystick (stays in place when released);
